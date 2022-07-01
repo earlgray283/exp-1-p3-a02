@@ -3,9 +3,9 @@ mod geotag;
 mod tag;
 
 use crate::{csv::load_csv, geotag::Geotag, tag::Tag};
-use anyhow::{anyhow, bail, Result};
-use futures::future::join_all;
+use anyhow::{bail, Result};
 use std::{env, sync::Arc, time::Instant};
+use tag::find_tag_by_tag_name;
 
 const THREAD_NUM: usize = 128;
 
@@ -41,38 +41,7 @@ async fn main() -> Result<()> {
 
     println!("[search-tag] start measurement");
     let begin = Instant::now();
-    let tags_len = tags.len();
-    let line_count_per_thread = tags_len / THREAD_NUM;
-    let mut handles = Vec::with_capacity(THREAD_NUM);
-    for i in (0..tags_len).step_by(line_count_per_thread) {
-        let target_tag = target_tag.clone();
-        let tags = tags.clone();
-        let handle = tokio::spawn(async move {
-            let mut cmp_cnt = 0;
-            for tag in &tags[i..(i + line_count_per_thread).min(tags.len())] {
-                cmp_cnt += 1;
-
-                if tag.tag == *target_tag {
-                    println!("cmp_cnt: {}(some)", cmp_cnt);
-                    return Some(Tag {
-                        id: tag.id,
-                        tag: tag.tag.clone(),
-                    });
-                }
-            }
-            None
-        });
-        handles.push(handle);
-    }
-    let res_list = join_all(handles).await;
-    let mut tag = None;
-    for res in res_list {
-        if let Some(sub_tag) = res.map_err(|e| anyhow!("{:?}", e))? {
-            tag = Some(sub_tag);
-            break;
-        }
-    }
-    let tag = tag.ok_or_else(|| anyhow!("tag {} was not found", target_tag))?;
+    let tag = find_tag_by_tag_name(tags.clone(), target_tag.clone()).await?;
     dbg!(tag);
     println!("[search-tag] took: {}[ms]", begin.elapsed().as_millis());
 
