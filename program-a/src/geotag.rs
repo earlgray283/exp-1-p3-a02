@@ -4,7 +4,7 @@ use std::cmp::Ordering;
 
 #[derive(Debug, Clone)]
 pub struct Geotag {
-    pub id: usize,
+    pub id: u64,
     pub date: String,
     pub latitude: f64,
     pub longitude: f64,
@@ -31,7 +31,7 @@ impl FromCsvLine for Geotag {
     }
 }
 
-pub fn find_geotag_by_id(geotags: &[Geotag], id: usize) -> Option<usize> {
+pub fn find_geotag_by_id(geotags: &[Geotag], id: u64) -> Option<usize> {
     let (mut low, mut high) = (0, geotags.len());
     while low != high {
         let mid = (low + high) / 2;

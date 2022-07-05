@@ -4,7 +4,7 @@ use std::cmp::Ordering;
 
 #[derive(Debug, Clone)]
 pub struct Tag {
-    pub id: usize,
+    pub id: u64,
     pub tag: String,
 }
 
