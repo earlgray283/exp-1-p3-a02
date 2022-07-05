@@ -1,7 +1,8 @@
 use crate::csv::FromCsvLine;
 use anyhow::Result;
+use std::cmp::Ordering;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Geotag {
     pub id: usize,
     pub date: String,
@@ -27,5 +28,25 @@ impl FromCsvLine for Geotag {
             longitude,
             url,
         })
+    }
+}
+
+pub fn find_geotag_by_id(geotags: &[Geotag], id: usize) -> Option<usize> {
+    let (mut low, mut high) = (0, geotags.len());
+    while low != high {
+        let mid = (low + high) / 2;
+        match geotags[mid].id.cmp(&id) {
+            Ordering::Less => {
+                low = mid + 1;
+            }
+            Ordering::Equal | Ordering::Greater => {
+                high = mid;
+            }
+        }
+    }
+    if geotags[low].id == id {
+        Some(low)
+    } else {
+        None
     }
 }

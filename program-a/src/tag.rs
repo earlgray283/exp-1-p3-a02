@@ -1,10 +1,8 @@
-use std::sync::Arc;
+use crate::csv::FromCsvLine;
+use anyhow::Result;
+use std::cmp::Ordering;
 
-use crate::{csv::FromCsvLine, THREAD_NUM};
-use anyhow::{anyhow, Result};
-use futures::future::join_all;
-
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Tag {
     pub id: usize,
     pub tag: String,
@@ -18,34 +16,29 @@ impl FromCsvLine for Tag {
     }
 }
 
-// linear-search
-pub async fn find_tag_by_tag_name(tags: Arc<Vec<Tag>>, tag_name: Arc<String>) -> Result<Tag> {
-    let tags_len = tags.len();
-    let line_count_per_thread = tags_len / THREAD_NUM;
-    let mut handles = Vec::with_capacity(THREAD_NUM);
-    for i in (0..tags_len).step_by(line_count_per_thread) {
-        let target_tag = tag_name.clone();
-        let tags = tags.clone();
-        let handle = tokio::spawn(async move {
-            for tag in &tags[i..(i + line_count_per_thread).min(tags.len())] {
-                if tag.tag == *target_tag {
-                    return Some(Tag {
-                        id: tag.id,
-                        tag: tag.tag.clone(),
-                    });
-                }
+pub fn find_tag_by_name(tags: &[Tag], name: &str) -> Option<Vec<usize>> {
+    let (mut low, mut high) = (0, tags.len());
+    while low != high {
+        let mid = (low + high) / 2;
+        match tags[mid].tag.as_str().cmp(name) {
+            Ordering::Less => {
+                low = mid + 1;
             }
-            None
-        });
-        handles.push(handle);
-    }
-    let res_list = join_all(handles).await;
-    let mut tag = None;
-    for res in res_list {
-        if let Some(sub_tag) = res.map_err(|e| anyhow!("{:?}", e))? {
-            tag = Some(sub_tag);
-            break;
+            Ordering::Equal | Ordering::Greater => {
+                high = mid;
+            }
         }
     }
-    tag.ok_or_else(|| anyhow!("tag {} was not found", tag_name))
+    if tags[low].tag == name {
+        let mut subtags = Vec::new();
+        for (i, tag) in tags[low..].iter().enumerate() {
+            if tag.tag != name {
+                break;
+            }
+            subtags.push(i);
+        }
+        Some(subtags)
+    } else {
+        None
+    }
 }
