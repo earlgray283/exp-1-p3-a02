@@ -8,7 +8,7 @@ use crate::{
     tag::Tag,
 };
 use actix_web::{
-    error::ErrorNotFound,
+    error::{ErrorInternalServerError, ErrorNotFound},
     get,
     http::StatusCode,
     web::{self, Data},
@@ -17,7 +17,7 @@ use actix_web::{
 use anyhow::Result;
 use futures::future::join_all;
 use serde::Deserialize;
-use std::{sync::Arc, time::Instant};
+use std::{fmt::Write, sync::Arc, time::Instant};
 use tag::find_tag_by_name;
 use tokio::sync::Mutex;
 
@@ -65,13 +65,14 @@ struct GetGeotagRequest {
     tag: String,
 }
 
-#[get("/")]
+#[get("/program")]
 async fn handle_get_geotags(
     tags: Data<Arc<Vec<Tag>>>,
     geotags: Data<Arc<Vec<Geotag>>>,
     info: web::Query<GetGeotagRequest>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let target_tag = Arc::new(info.tag.clone());
+    println!("tag: {}", target_tag);
 
     println!("[search-tag] start measurement");
     let begin = Instant::now();
@@ -113,14 +114,37 @@ async fn handle_get_geotags(
 
     subgeotags.sort_unstable_by(|a, b| b.date.cmp(&a.date));
 
+    let mut html = String::with_capacity(1_000_000);
+    writeln!(&mut html, "<!DOCTYPE html>").map_err(ErrorInternalServerError)?;
+    writeln!(&mut html, "<html>").map_err(ErrorInternalServerError)?;
+    writeln!(&mut html, "<head>").map_err(ErrorInternalServerError)?;
+    writeln!(&mut html, "<meta charset=\"UTF-8\" />").map_err(ErrorInternalServerError)?;
+    writeln!(&mut html, "<title>実装Ａの結果</title>").map_err(ErrorInternalServerError)?;
+    writeln!(&mut html, "</head>").map_err(ErrorInternalServerError)?;
+    writeln!(&mut html, "<body>").map_err(ErrorInternalServerError)?;
+    writeln!(&mut html, "<h1>{}</h1>", target_tag).map_err(ErrorInternalServerError)?;
+    writeln!(&mut html, "<table>").map_err(ErrorInternalServerError)?;
+    writeln!(&mut html, "<tr>").map_err(ErrorInternalServerError)?;
+    writeln!(&mut html, "<th>id</th>").map_err(ErrorInternalServerError)?;
+    writeln!(&mut html, "<th>latitude</th>").map_err(ErrorInternalServerError)?;
+    writeln!(&mut html, "<th>longitude</th>").map_err(ErrorInternalServerError)?;
+    writeln!(&mut html, "<th>date</th>").map_err(ErrorInternalServerError)?;
+    writeln!(&mut html, "</tr>").map_err(ErrorInternalServerError)?;
     for subgeotag in subgeotags {
-        println!(
-            "{} {} {} {}",
-            subgeotag.id, subgeotag.latitude, subgeotag.longitude, &subgeotag.date
-        )
+        writeln!(&mut html, "<tr>").map_err(ErrorInternalServerError)?;
+        writeln!(&mut html, "<td>{}</td>", subgeotag.id).map_err(ErrorInternalServerError)?;
+        writeln!(&mut html, "<td>{}</td>", subgeotag.latitude).map_err(ErrorInternalServerError)?;
+        writeln!(&mut html, "<td>{}</td>", subgeotag.longitude)
+            .map_err(ErrorInternalServerError)?;
+        writeln!(&mut html, "<td>{}</td>", &subgeotag.url).map_err(ErrorInternalServerError)?;
+        writeln!(&mut html, "<td>{}</td>", subgeotag.date).map_err(ErrorInternalServerError)?;
+        writeln!(&mut html, "</tr>").map_err(ErrorInternalServerError)?;
     }
-    println!("=========================-");
+    writeln!(&mut html, "</table>").map_err(ErrorInternalServerError)?;
+    writeln!(&mut html, "</body>").map_err(ErrorInternalServerError)?;
+    writeln!(&mut html, "</html>").map_err(ErrorInternalServerError)?;
 
     Ok(HttpResponse::build(StatusCode::OK)
-        .body("<!DOCTYPE html><html><head></head><body></body></html>"))
+        .content_type("text/html")
+        .body(html))
 }
