@@ -19,7 +19,7 @@ impl FromCsvLine for Geotag {
             tokens[1].to_string(),
             tokens[2].parse()?,
             tokens[3].parse()?,
-            tokens[4].to_string(),
+            tokens[4].trim().to_string(),
         );
         Ok(Self {
             id,

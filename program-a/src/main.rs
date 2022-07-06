@@ -22,6 +22,7 @@ use tag::find_tag_by_name;
 use tokio::sync::Mutex;
 
 const THREAD_NUM: usize = 128;
+const SUBTAGS_LIMIT: usize = 100;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -130,14 +131,15 @@ async fn handle_get_geotags(
     writeln!(&mut html, "<th>longitude</th>").map_err(ErrorInternalServerError)?;
     writeln!(&mut html, "<th>date</th>").map_err(ErrorInternalServerError)?;
     writeln!(&mut html, "</tr>").map_err(ErrorInternalServerError)?;
-    for subgeotag in subgeotags {
+    for subgeotag in &subgeotags[..SUBTAGS_LIMIT] {
         writeln!(&mut html, "<tr>").map_err(ErrorInternalServerError)?;
         writeln!(&mut html, "<td>{}</td>", subgeotag.id).map_err(ErrorInternalServerError)?;
         writeln!(&mut html, "<td>{}</td>", subgeotag.latitude).map_err(ErrorInternalServerError)?;
         writeln!(&mut html, "<td>{}</td>", subgeotag.longitude)
             .map_err(ErrorInternalServerError)?;
-        writeln!(&mut html, "<td>{}</td>", &subgeotag.url).map_err(ErrorInternalServerError)?;
         writeln!(&mut html, "<td>{}</td>", subgeotag.date).map_err(ErrorInternalServerError)?;
+        writeln!(&mut html, "<img src=\"{}\" />", &subgeotag.url)
+            .map_err(ErrorInternalServerError)?;
         writeln!(&mut html, "</tr>").map_err(ErrorInternalServerError)?;
     }
     writeln!(&mut html, "</table>").map_err(ErrorInternalServerError)?;
