@@ -18,7 +18,6 @@ use actix_web::{
 use anyhow::Result;
 use futures::future::join_all;
 use serde::Deserialize;
-use sort::SortBy;
 use std::{fmt::Write, sync::Arc, time::Instant};
 use tag::find_tag_by_name;
 use tokio::sync::Mutex;
@@ -34,16 +33,14 @@ async fn main() -> Result<()> {
         tokio::spawn(async {
             println!("Loading and sorting tag.csv...");
             let mut tags = load_csv::<Tag>("../csv/tag.csv").await?;
-            // tags.sort_unstable_by(|x, y| x.tag.cmp(&y.tag));
-            tags.comb_sort_by(|x, y| x.tag.cmp(&y.tag));
+            tags.sort_unstable_by(|x, y| x.tag.cmp(&y.tag));
             println!("done");
             Ok::<_, anyhow::Error>(tags)
         }),
         tokio::spawn(async {
             println!("Loading and sorting geotag.csv...");
             let mut geotags = load_csv::<Geotag>("../csv/geotag.csv").await?;
-            // geotags.sort_unstable_by(|x, y| x.id.cmp(&y.id));
-            geotags.comb_sort_by(|x, y| x.id.cmp(&y.id));
+            geotags.sort_unstable_by(|x, y| x.id.cmp(&y.id));
             println!("done");
             Ok::<_, anyhow::Error>(geotags)
         })
