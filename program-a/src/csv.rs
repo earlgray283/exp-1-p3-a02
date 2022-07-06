@@ -9,12 +9,10 @@ pub trait FromCsvLine: marker::Sized {
     fn from_str(s: &str) -> Result<Self>;
 }
 
-const TAG_CAPACITY: usize = 22_810_397;
-
 pub async fn load_csv<T: FromCsvLine>(path: &str) -> Result<Vec<T>> {
     let csv_file = File::open(path).await?;
     let mut csv_reader = BufReader::new(csv_file);
-    let mut list = Vec::with_capacity(TAG_CAPACITY);
+    let mut list = Vec::new();
     loop {
         let mut buf = String::with_capacity(300);
         let n = csv_reader.read_line(&mut buf).await?;

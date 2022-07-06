@@ -61,7 +61,7 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize)]
 struct GetGeotagRequest {
     tag: String,
 }
