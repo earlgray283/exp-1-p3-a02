@@ -6,8 +6,8 @@ use std::cmp::Ordering;
 pub struct Geotag {
     pub id: u64,
     pub date: String,
-    pub latitude: f64,
-    pub longitude: f64,
+    pub latitude: f32,
+    pub longitude: f32,
     pub url: String,
 }
 
