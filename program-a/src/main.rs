@@ -45,10 +45,10 @@ async fn main() -> Result<()> {
             Ok::<_, anyhow::Error>(geotags)
         })
     );
-    let (tags, geotags) = (Arc::new(tags??), Arc::new(geotags??));
+    //let (tags, geotags) = (Arc::new(tags??), Arc::new(geotags??));
+    let (tags, geotags) = (tags??, geotags??);
     println!("[loading] took: {}[ms]", begin.elapsed().as_millis());
 
-    println!("Li&stening on http://localhost:8080...");
     HttpServer::new(move || {
         App::new()
             .app_data(Data::new(tags.clone()))
@@ -56,6 +56,7 @@ async fn main() -> Result<()> {
             .service(handle_get_geotags)
     })
     .bind(("0.0.0.0", 8080))?
+    .on_connect(|_, _| println!("Li&stening on http://localhost:8080..."))
     .run()
     .await?;
 
@@ -69,8 +70,8 @@ struct GetGeotagRequest {
 
 #[get("/program")]
 async fn handle_get_geotags(
-    tags: Data<Arc<Vec<Tag>>>,
-    geotags: Data<Arc<Vec<Geotag>>>,
+    tags: Data<Vec<Tag>>,
+    geotags: Data<Vec<Geotag>>,
     info: web::Query<GetGeotagRequest>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let target_tag = Arc::new(info.tag.clone());
