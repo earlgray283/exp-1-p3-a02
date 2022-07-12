@@ -18,6 +18,7 @@ func LoadTags(name string) ([]*Tag, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer f.Close()
 	sc := bufio.NewScanner(f)
 	buf := make([]byte, 4830928)
 	sc.Buffer(buf, 4830928)

@@ -22,6 +22,7 @@ func LoadGeotags(name string) ([]*Geotag, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer f.Close()
 	sc := bufio.NewScanner(f)
 	geotags := []*Geotag{}
 	for sc.Scan() {

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	_ "net/http/pprof"
 	"sort"
 	"strings"
 	"sync"
@@ -52,6 +53,8 @@ func main() {
 		log.Fatal(geotagRes.Second)
 	}
 	geotags := geotagRes.First
+	close(tagResCh)
+	close(geotagResCh)
 
 	http.HandleFunc("/program", handleSearchTag(tags, geotags))
 
