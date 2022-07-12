@@ -130,8 +130,12 @@ async fn handle_get_geotags(
             base_date + Duration::seconds(subgeotag.elapsed as i64)
         )
         .map_err(ErrorInternalServerError)?;
-        // writeln!(&mut html, "<img src=\"{}\" />", &subgeotag.url)
-        //     .map_err(ErrorInternalServerError)?;
+        writeln!(
+            &mut html,
+            "<img src=\"http://farm{}.static.flickr.com{}\" />",
+            subgeotag.farm_num, subgeotag.directory
+        )
+        .map_err(ErrorInternalServerError)?;
         writeln!(&mut html, "</tr>").map_err(ErrorInternalServerError)?;
     }
     writeln!(&mut html, "</table>").map_err(ErrorInternalServerError)?;
