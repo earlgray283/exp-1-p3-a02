@@ -21,6 +21,5 @@ pub async fn load_csv<T: FromCsvLine>(path: &str) -> Result<Vec<T>> {
         }
         list.push(T::from_str(buf.as_str()).map_err(|_| anyhow!("failed to parse {}", &buf))?);
     }
-    println!("{}", list.len());
     Ok(list)
 }

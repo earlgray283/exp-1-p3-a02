@@ -19,7 +19,7 @@ use anyhow::Result;
 use chrono::{prelude::*, Duration, Utc};
 use futures::future::join_all;
 use serde::Deserialize;
-use std::{fmt::Write, sync::Arc, time::Instant};
+use std::{fmt::Write, mem::size_of_val, sync::Arc};
 use tag::find_tag_by_name;
 use tokio::sync::Mutex;
 
@@ -28,27 +28,27 @@ const SUBTAGS_LIMIT: usize = 100;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    println!("[loading] start measurement");
-    let begin = Instant::now();
-    let (tags, geotags) = tokio::join!(
+    let (res_tags, res_geotags) = tokio::join!(
         tokio::spawn(async {
-            println!("Loading and sorting tag.csv...");
             let mut tags = load_csv::<Tag>("../csv/new_tag.csv").await?;
             tags.sort_unstable_by(|x, y| x.tag.cmp(&y.tag));
-            println!("done");
             Ok::<_, anyhow::Error>(tags)
         }),
         tokio::spawn(async {
-            println!("Loading and sorting geotag.csv...");
             let mut geotags = load_csv::<Geotag>("../csv/new_geotag.csv").await?;
             geotags.sort_unstable_by(|x, y| x.id.cmp(&y.id));
-            println!("done");
             Ok::<_, anyhow::Error>(geotags)
         })
     );
-    let (tags, geotags) = (Arc::new(tags??), Arc::new(geotags??));
-    println!("[loading] took: {}[ms]", begin.elapsed().as_millis());
+    let (tags, geotags) = (res_tags??, res_geotags??);
+    println!(
+        "tags: {}[B], geotgas: {}[B]",
+        size_of_val(&tags[..]),
+        size_of_val(&geotags[..])
+    );
+    let (tags, geotags) = (Arc::new(tags), Arc::new(geotags));
 
+    println!("Li&stening on http://localhost:8080...");
     HttpServer::new(move || {
         App::new()
             .app_data(Data::new(tags.clone()))
@@ -56,7 +56,6 @@ async fn main() -> Result<()> {
             .service(handle_get_geotags)
     })
     .bind(("0.0.0.0", 8080))?
-    .on_connect(|_, _| println!("Li&stening on http://localhost:8080..."))
     .run()
     .await?;
 
@@ -75,22 +74,12 @@ async fn handle_get_geotags(
     info: web::Query<GetGeotagRequest>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let target_tag = Arc::new(info.tag.clone());
-    println!("tag: {}", target_tag);
 
-    println!("[search-tag] start measurement");
-    let begin = Instant::now();
     let subtags = match find_tag_by_name(tags.as_ref(), target_tag.as_ref()) {
         Some(tags) => tags,
         None => return Err(ErrorNotFound("")),
     };
-    println!(
-        "[search-tag] took: {}[ns](found {} entries)",
-        begin.elapsed().as_nanos(),
-        subtags.len()
-    );
 
-    println!("[search-geotag] start measurement");
-    let begin = Instant::now();
     let mut handles = Vec::with_capacity(subtags.len());
     let geotag_indexs = Arc::new(Mutex::new(Vec::with_capacity(subtags.len())));
     for &subtag in subtags.iter() {
@@ -109,11 +98,6 @@ async fn handle_get_geotags(
     for &geotag_i in geotag_indexs.iter() {
         subgeotags.push(&geotags[geotag_i]);
     }
-    println!(
-        "[search-geotag] took: {}[ns](found {} entries)",
-        begin.elapsed().as_nanos(),
-        geotag_indexs.len()
-    );
 
     subgeotags.sort_unstable_by(|a, b| b.elapsed.cmp(&a.elapsed));
 

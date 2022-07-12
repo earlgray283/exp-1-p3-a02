@@ -2,7 +2,6 @@ use crate::csv::FromCsvLine;
 use anyhow::Result;
 use std::cmp::Ordering;
 
-#[derive(Clone)]
 pub struct Geotag {
     pub id: u64,
     pub elapsed: u32,
