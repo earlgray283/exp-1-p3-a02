@@ -132,7 +132,7 @@ async fn handle_get_geotags(
     writeln!(&mut html, "<th>longitude</th>").map_err(ErrorInternalServerError)?;
     writeln!(&mut html, "<th>date</th>").map_err(ErrorInternalServerError)?;
     writeln!(&mut html, "</tr>").map_err(ErrorInternalServerError)?;
-    for subgeotag in &subgeotags[..SUBTAGS_LIMIT] {
+    for subgeotag in &subgeotags[..SUBTAGS_LIMIT.min(subgeotags.len())] {
         writeln!(&mut html, "<tr>").map_err(ErrorInternalServerError)?;
         writeln!(&mut html, "<td>{}</td>", subgeotag.id).map_err(ErrorInternalServerError)?;
         writeln!(&mut html, "<td>{}</td>", subgeotag.latitude).map_err(ErrorInternalServerError)?;
