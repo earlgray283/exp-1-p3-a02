@@ -16,6 +16,7 @@ use actix_web::{
     App, HttpResponse, HttpServer,
 };
 use anyhow::Result;
+use chrono::{prelude::*, Duration, Utc};
 use futures::future::join_all;
 use serde::Deserialize;
 use std::{fmt::Write, sync::Arc, time::Instant};
@@ -32,21 +33,20 @@ async fn main() -> Result<()> {
     let (tags, geotags) = tokio::join!(
         tokio::spawn(async {
             println!("Loading and sorting tag.csv...");
-            let mut tags = load_csv::<Tag>("../csv/tag.csv").await?;
+            let mut tags = load_csv::<Tag>("../csv/new_tag.csv").await?;
             tags.sort_unstable_by(|x, y| x.tag.cmp(&y.tag));
             println!("done");
             Ok::<_, anyhow::Error>(tags)
         }),
         tokio::spawn(async {
             println!("Loading and sorting geotag.csv...");
-            let mut geotags = load_csv::<Geotag>("../csv/geotag.csv").await?;
+            let mut geotags = load_csv::<Geotag>("../csv/new_geotag.csv").await?;
             geotags.sort_unstable_by(|x, y| x.id.cmp(&y.id));
             println!("done");
             Ok::<_, anyhow::Error>(geotags)
         })
     );
-    //let (tags, geotags) = (Arc::new(tags??), Arc::new(geotags??));
-    let (tags, geotags) = (tags??, geotags??);
+    let (tags, geotags) = (Arc::new(tags??), Arc::new(geotags??));
     println!("[loading] took: {}[ms]", begin.elapsed().as_millis());
 
     HttpServer::new(move || {
@@ -70,8 +70,8 @@ struct GetGeotagRequest {
 
 #[get("/program")]
 async fn handle_get_geotags(
-    tags: Data<Vec<Tag>>,
-    geotags: Data<Vec<Geotag>>,
+    tags: Data<Arc<Vec<Tag>>>,
+    geotags: Data<Arc<Vec<Geotag>>>,
     info: web::Query<GetGeotagRequest>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let target_tag = Arc::new(info.tag.clone());
@@ -115,7 +115,9 @@ async fn handle_get_geotags(
         geotag_indexs.len()
     );
 
-    subgeotags.sort_unstable_by(|a, b| b.date.cmp(&a.date));
+    subgeotags.sort_unstable_by(|a, b| b.elapsed.cmp(&a.elapsed));
+
+    let base_date = Utc.ymd(2012, 1, 1);
 
     let mut html = String::with_capacity(1_000_000);
     writeln!(&mut html, "<!DOCTYPE html>").map_err(ErrorInternalServerError)?;
@@ -139,9 +141,14 @@ async fn handle_get_geotags(
         writeln!(&mut html, "<td>{}</td>", subgeotag.latitude).map_err(ErrorInternalServerError)?;
         writeln!(&mut html, "<td>{}</td>", subgeotag.longitude)
             .map_err(ErrorInternalServerError)?;
-        writeln!(&mut html, "<td>{}</td>", subgeotag.date).map_err(ErrorInternalServerError)?;
-        writeln!(&mut html, "<img src=\"{}\" />", &subgeotag.url)
-            .map_err(ErrorInternalServerError)?;
+        writeln!(
+            &mut html,
+            "<td>{}</td>",
+            base_date + Duration::seconds(subgeotag.elapsed as i64)
+        )
+        .map_err(ErrorInternalServerError)?;
+        // writeln!(&mut html, "<img src=\"{}\" />", &subgeotag.url)
+        //     .map_err(ErrorInternalServerError)?;
         writeln!(&mut html, "</tr>").map_err(ErrorInternalServerError)?;
     }
     writeln!(&mut html, "</table>").map_err(ErrorInternalServerError)?;

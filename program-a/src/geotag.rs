@@ -5,28 +5,31 @@ use std::cmp::Ordering;
 #[derive(Clone)]
 pub struct Geotag {
     pub id: u64,
-    pub date: String,
+    pub elapsed: u32,
     pub latitude: f32,
     pub longitude: f32,
-    pub url: String,
+    pub farm_num: i8,
+    pub directory: String,
 }
 
 impl FromCsvLine for Geotag {
     fn from_str(s: &str) -> Result<Self> {
         let tokens = s.split(',').collect::<Vec<_>>();
-        let (id, date, latitude, longitude, url) = (
+        let (id, elapsed, latitude, longitude, farm_num, directory) = (
             tokens[0].parse()?,
-            tokens[1].to_string(),
+            tokens[1].parse()?,
             tokens[2].parse()?,
             tokens[3].parse()?,
-            tokens[4].trim().to_string(),
+            tokens[4].parse()?,
+            tokens[5].trim(),
         );
         Ok(Self {
             id,
-            date,
+            elapsed,
             latitude,
             longitude,
-            url,
+            farm_num,
+            directory: directory.to_string(),
         })
     }
 }
