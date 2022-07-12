@@ -30,12 +30,12 @@ const SUBTAGS_LIMIT: usize = 100;
 async fn main() -> Result<()> {
     let (res_tags, res_geotags) = tokio::join!(
         tokio::spawn(async {
-            let mut tags = load_csv::<Tag>("../csv/new_tag.csv").await?;
+            let mut tags = load_csv::<Tag>("csv/new_tag.csv").await?;
             tags.sort_unstable_by(|x, y| x.tag.cmp(&y.tag));
             Ok::<_, anyhow::Error>(tags)
         }),
         tokio::spawn(async {
-            let mut geotags = load_csv::<Geotag>("../csv/new_geotag.csv").await?;
+            let mut geotags = load_csv::<Geotag>("csv/new_geotag.csv").await?;
             geotags.sort_unstable_by(|x, y| x.id.cmp(&y.id));
             Ok::<_, anyhow::Error>(geotags)
         })
