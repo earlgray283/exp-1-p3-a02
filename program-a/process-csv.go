@@ -34,6 +34,9 @@ func main() {
 		tokens := strings.Split(strings.TrimSpace(tagsc.Text()), ",")
 		id, _ := strconv.ParseUint(tokens[0], 10, 64)
 		tag := tokens[1]
+		if tag == "" {
+			continue
+		}
 		if _, ok := tagmap[tag]; !ok {
 			tagmap[tag] = make([]uint64, 0)
 		}
