@@ -13,8 +13,8 @@ import (
 )
 
 type Tag struct {
-	id  uint64
 	tag string
+	ids []uint64
 }
 
 type Geotag struct {
@@ -27,25 +27,33 @@ type Geotag struct {
 }
 
 func main() {
-	tags := make([]*Tag, 0)
 	tagFile, _ := os.Open("csv/tag.csv")
 	tagsc := bufio.NewScanner(tagFile)
+	tagmap := map[string][]uint64{}
 	for tagsc.Scan() {
 		tokens := strings.Split(strings.TrimSpace(tagsc.Text()), ",")
 		id, _ := strconv.ParseUint(tokens[0], 10, 64)
-		tags = append(tags, &Tag{
-			id:  id,
-			tag: tokens[1],
-		})
+		tag := tokens[1]
+		if _, ok := tagmap[tag]; !ok {
+			tagmap[tag] = make([]uint64, 0)
+		}
+		tagmap[tag] = append(tagmap[tag], id)
+	}
+	tags := make([]*Tag, 0, len(tagmap))
+	for tag, ids := range tagmap {
+		tags = append(tags, &Tag{tag, ids})
 	}
 	tagFile.Close()
 	sort.Slice(tags, func(i, j int) bool {
-		return tags[i].id < tags[j].id
+		return tags[i].tag < tags[j].tag
 	})
 	newTagFile, _ := os.Create("csv/new_tag.csv")
 	newTagCsv := csv.NewWriter(newTagFile)
 	for _, tag := range tags {
-		cols := []string{strconv.FormatUint(tag.id, 10), tag.tag}
+		cols := []string{tag.tag}
+		for _, id := range tag.ids {
+			cols = append(cols, strconv.FormatUint(id, 10))
+		}
 		newTagCsv.Write(cols)
 	}
 	newTagCsv.Flush()
@@ -79,7 +87,7 @@ func main() {
 	}
 	geotagFile.Close()
 	sort.Slice(geotags, func(i, j int) bool {
-		return geotags[i].id < tags[j].id
+		return geotags[i].id < geotags[j].id
 	})
 
 	newGeotagFile, _ := os.Create("csv/new_geotag.csv")

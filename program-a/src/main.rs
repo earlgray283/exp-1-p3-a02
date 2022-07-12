@@ -82,12 +82,11 @@ async fn handle_get_geotags(
 
     let mut handles = Vec::with_capacity(subtags.len());
     let geotag_indexs = Arc::new(Mutex::new(Vec::with_capacity(subtags.len())));
-    for &subtag in subtags.iter() {
+    for &subtag in subtags {
         let geotags = geotags.clone();
-        let tags = tags.clone();
         let geotag_ids = geotag_indexs.clone();
         let handle = tokio::spawn(async move {
-            let geotag_i = find_geotag_by_id(geotags.as_ref(), tags[subtag].id).unwrap();
+            let geotag_i = find_geotag_by_id(geotags.as_ref(), subtag).unwrap();
             geotag_ids.lock().await.push(geotag_i);
         });
         handles.push(handle);

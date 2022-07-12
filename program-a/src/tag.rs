@@ -3,19 +3,26 @@ use anyhow::Result;
 use std::cmp::Ordering;
 
 pub struct Tag {
-    pub id: u64,
     pub tag: String,
+    pub ids: Vec<u64>,
 }
 
 impl FromCsvLine for Tag {
     fn from_str(s: &str) -> Result<Self> {
         let tokens = s.trim().split(',').collect::<Vec<_>>();
-        let (id, tag) = (tokens[0].parse()?, tokens[1].into());
-        Ok(Self { id, tag })
+        let tag = tokens[0];
+        let mut ids = Vec::new();
+        for token in &tokens[1..] {
+            ids.push(token.parse()?);
+        }
+        Ok(Self {
+            tag: tag.to_string(),
+            ids,
+        })
     }
 }
 
-pub fn find_tag_by_name(tags: &[Tag], name: &str) -> Option<Vec<usize>> {
+pub fn find_tag_by_name<'a>(tags: &'a [Tag], name: &'a str) -> Option<&'a Vec<u64>> {
     let (mut low, mut high) = (0, tags.len());
     while low != high {
         let mid = (low + high) / 2;
@@ -29,14 +36,7 @@ pub fn find_tag_by_name(tags: &[Tag], name: &str) -> Option<Vec<usize>> {
         }
     }
     if tags[low].tag == name {
-        let mut subtags = Vec::new();
-        for (i, tag) in tags[low..].iter().enumerate() {
-            if tag.tag != name {
-                break;
-            }
-            subtags.push(i);
-        }
-        Some(subtags)
+        Some(&tags[low].ids)
     } else {
         None
     }
