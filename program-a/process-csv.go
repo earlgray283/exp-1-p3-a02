@@ -27,7 +27,19 @@ type Geotag struct {
 }
 
 func main() {
-	tagFile, _ := os.Open("csv/tag.csv")
+	if err := processTagCsv("csv/tag.csv"); err != nil {
+		log.Fatal(err)
+	}
+	if err := processGeotagCsv("csv/geotag.csv"); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func processTagCsv(name string) error {
+	tagFile, err := os.Open(name)
+	if err != nil {
+		return err
+	}
 	tagsc := bufio.NewScanner(tagFile)
 	tagmap := map[string][]uint64{}
 	for tagsc.Scan() {
@@ -42,15 +54,20 @@ func main() {
 		}
 		tagmap[tag] = append(tagmap[tag], id)
 	}
+	tagFile.Close()
 	tags := make([]*Tag, 0, len(tagmap))
 	for tag, ids := range tagmap {
 		tags = append(tags, &Tag{tag, ids})
 	}
-	tagFile.Close()
+
 	sort.Slice(tags, func(i, j int) bool {
 		return tags[i].tag < tags[j].tag
 	})
-	newTagFile, _ := os.Create("csv/new_tag.csv")
+
+	newTagFile, err := os.Create("csv/new_tag.csv")
+	if err != nil {
+		return err
+	}
 	newTagCsv := csv.NewWriter(newTagFile)
 	for _, tag := range tags {
 		cols := []string{tag.tag}
@@ -62,8 +79,15 @@ func main() {
 	newTagCsv.Flush()
 	newTagFile.Close()
 
+	return nil
+}
+
+func processGeotagCsv(name string) error {
+	geotagFile, err := os.Open(name)
+	if err != nil {
+		return err
+	}
 	geotags := make([]*Geotag, 0)
-	geotagFile, _ := os.Open("csv/geotag.csv")
 	geotagsc := bufio.NewScanner(geotagFile)
 	for geotagsc.Scan() {
 		tokens := strings.Split(strings.TrimSpace(geotagsc.Text()), ",")
@@ -73,7 +97,6 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-
 		latitude, _ := strconv.ParseFloat(tokens[2], 64)
 		longitude, _ := strconv.ParseFloat(tokens[3], 64)
 		var farmNum int
@@ -89,11 +112,15 @@ func main() {
 		})
 	}
 	geotagFile.Close()
+
 	sort.Slice(geotags, func(i, j int) bool {
 		return geotags[i].id < geotags[j].id
 	})
 
-	newGeotagFile, _ := os.Create("csv/new_geotag.csv")
+	newGeotagFile, err := os.Create("csv/new_geotag.csv")
+	if err != nil {
+		return err
+	}
 	newGeotagCsv := csv.NewWriter(newGeotagFile)
 	for _, geotag := range geotags {
 		cols := []string{
@@ -108,4 +135,6 @@ func main() {
 	}
 	newGeotagCsv.Flush()
 	newGeotagFile.Close()
+
+	return nil
 }
