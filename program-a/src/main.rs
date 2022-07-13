@@ -18,11 +18,13 @@ use anyhow::Result;
 use chrono::{prelude::*, Duration, Utc};
 use futures::future::join_all;
 use serde::Deserialize;
-use std::{fmt::Write, mem::size_of_val, sync::Arc};
+use std::{fmt::Write, sync::Arc};
 use tag::find_tag_by_name;
 use tokio::sync::Mutex;
 
 const SUBTAGS_LIMIT: usize = 100;
+const PORT: u16 = 8080;
+const HTML_CAPACITY: usize = 100_000;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -38,22 +40,16 @@ async fn main() -> Result<()> {
             Ok::<_, anyhow::Error>(geotags)
         })
     );
-    let (tags, geotags) = (res_tags??, res_geotags??);
-    println!(
-        "tags: {}[B], geotgas: {}[B]",
-        size_of_val(&tags[..]),
-        size_of_val(&geotags[..])
-    );
-    let (tags, geotags) = (Arc::new(tags), Arc::new(geotags));
+    let (tags, geotags) = (Arc::new(res_tags??), Arc::new(res_geotags??));
 
-    println!("Li&stening on http://localhost:8080...");
+    println!("Listening on http://localhost:8080...");
     HttpServer::new(move || {
         App::new()
             .app_data(Data::new(tags.clone()))
             .app_data(Data::new(geotags.clone()))
             .service(handle_get_geotags)
     })
-    .bind(("0.0.0.0", 8080))?
+    .bind(("0.0.0.0", PORT))?
     .run()
     .await?;
 
@@ -100,7 +96,7 @@ async fn handle_get_geotags(
 
     let base_date = Utc.ymd(2012, 1, 1);
 
-    let mut html = String::with_capacity(1_000_000);
+    let mut html = String::with_capacity(HTML_CAPACITY);
     writeln!(&mut html, "<!DOCTYPE html>").map_err(ErrorInternalServerError)?;
     writeln!(&mut html, "<html>").map_err(ErrorInternalServerError)?;
     writeln!(&mut html, "<head>").map_err(ErrorInternalServerError)?;
