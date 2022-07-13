@@ -73,24 +73,24 @@ async fn handle_get_geotags(
 ) -> Result<HttpResponse, actix_web::Error> {
     let target_tag = Arc::new(info.tag.clone());
 
-    let subtags = match find_tag_by_name(tags.as_ref(), target_tag.as_ref()) {
-        Some(tags) => tags,
+    let tag = match find_tag_by_name(tags.as_ref(), target_tag.as_ref()) {
+        Some(i) => &tags[i],
         None => return Err(ErrorNotFound("")),
     };
 
-    let mut handles = Vec::with_capacity(subtags.len());
-    let geotag_indexs = Arc::new(Mutex::new(Vec::with_capacity(subtags.len())));
-    for &subtag in subtags {
+    let mut handles = Vec::with_capacity(tag.ids.len());
+    let geotag_indexs = Arc::new(Mutex::new(Vec::with_capacity(tag.ids.len())));
+    for &id in &tag.ids {
         let geotags = geotags.clone();
         let geotag_ids = geotag_indexs.clone();
         let handle = tokio::spawn(async move {
-            let geotag_i = find_geotag_by_id(geotags.as_ref(), subtag).unwrap();
+            let geotag_i = find_geotag_by_id(geotags.as_ref(), id).unwrap();
             geotag_ids.lock().await.push(geotag_i);
         });
         handles.push(handle);
     }
     join_all(handles).await;
-    let mut subgeotags = Vec::with_capacity(subtags.len());
+    let mut subgeotags = Vec::with_capacity(tag.ids.len());
     let geotag_indexs = geotag_indexs.lock().await;
     for &geotag_i in geotag_indexs.iter() {
         subgeotags.push(&geotags[geotag_i]);
