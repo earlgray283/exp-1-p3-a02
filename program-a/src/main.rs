@@ -1,6 +1,5 @@
 mod csv;
 mod geotag;
-mod sort;
 mod tag;
 
 use crate::{
@@ -23,7 +22,6 @@ use std::{fmt::Write, mem::size_of_val, sync::Arc};
 use tag::find_tag_by_name;
 use tokio::sync::Mutex;
 
-const THREAD_NUM: usize = 128;
 const SUBTAGS_LIMIT: usize = 100;
 
 #[tokio::main]
