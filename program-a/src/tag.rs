@@ -22,7 +22,7 @@ impl FromCsvLine for Tag {
     }
 }
 
-pub fn find_tag_by_name<'a>(tags: &'a [Tag], name: &'a str) -> Option<&'a Vec<u64>> {
+pub fn find_tag_by_name(tags: &[Tag], name: &str) -> Option<usize> {
     let (mut low, mut high) = (0, tags.len());
     while low != high {
         let mid = (low + high) / 2;
@@ -36,7 +36,7 @@ pub fn find_tag_by_name<'a>(tags: &'a [Tag], name: &'a str) -> Option<&'a Vec<u6
         }
     }
     if tags[low].tag == name {
-        Some(&tags[low].ids)
+        Some(low)
     } else {
         None
     }
