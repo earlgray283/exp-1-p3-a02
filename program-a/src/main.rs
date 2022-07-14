@@ -97,21 +97,21 @@ async fn handle_get_geotags(
     let base_date = Utc.ymd(2012, 1, 1);
 
     let mut html = String::with_capacity(HTML_CAPACITY);
-    writeln!(&mut html, "<!DOCTYPE html>").map_err(ErrorInternalServerError)?;
-    writeln!(&mut html, "<html>").map_err(ErrorInternalServerError)?;
-    writeln!(&mut html, "<head>").map_err(ErrorInternalServerError)?;
-    writeln!(&mut html, "<meta charset=\"UTF-8\" />").map_err(ErrorInternalServerError)?;
-    writeln!(&mut html, "<title>実装Ａの結果</title>").map_err(ErrorInternalServerError)?;
-    writeln!(&mut html, "</head>").map_err(ErrorInternalServerError)?;
-    writeln!(&mut html, "<body>").map_err(ErrorInternalServerError)?;
-    writeln!(&mut html, "<h1>{}</h1>", target_tag).map_err(ErrorInternalServerError)?;
-    writeln!(&mut html, "<table>").map_err(ErrorInternalServerError)?;
-    writeln!(&mut html, "<tr>").map_err(ErrorInternalServerError)?;
-    writeln!(&mut html, "<th>id</th>").map_err(ErrorInternalServerError)?;
-    writeln!(&mut html, "<th>latitude</th>").map_err(ErrorInternalServerError)?;
-    writeln!(&mut html, "<th>longitude</th>").map_err(ErrorInternalServerError)?;
-    writeln!(&mut html, "<th>date</th>").map_err(ErrorInternalServerError)?;
-    writeln!(&mut html, "</tr>").map_err(ErrorInternalServerError)?;
+    // writeln!(&mut html, "<!DOCTYPE html>").map_err(ErrorInternalServerError)?;
+    // writeln!(&mut html, "<html>").map_err(ErrorInternalServerError)?;
+    // writeln!(&mut html, "<head>").map_err(ErrorInternalServerError)?;
+    // writeln!(&mut html, "<meta charset=\"UTF-8\" />").map_err(ErrorInternalServerError)?;
+    // writeln!(&mut html, "<title>実装Ａの結果</title>").map_err(ErrorInternalServerError)?;
+    // writeln!(&mut html, "</head>").map_err(ErrorInternalServerError)?;
+    // writeln!(&mut html, "<body>").map_err(ErrorInternalServerError)?;
+    // writeln!(&mut html, "<h1>{}</h1>", target_tag).map_err(ErrorInternalServerError)?;
+    // writeln!(&mut html, "<table>").map_err(ErrorInternalServerError)?;
+    // writeln!(&mut html, "<tr>").map_err(ErrorInternalServerError)?;
+    // writeln!(&mut html, "<th>id</th>").map_err(ErrorInternalServerError)?;
+    // writeln!(&mut html, "<th>latitude</th>").map_err(ErrorInternalServerError)?;
+    // writeln!(&mut html, "<th>longitude</th>").map_err(ErrorInternalServerError)?;
+    // writeln!(&mut html, "<th>date</th>").map_err(ErrorInternalServerError)?;
+    // writeln!(&mut html, "</tr>").map_err(ErrorInternalServerError)?;
     for subgeotag in &subgeotags[..SUBTAGS_LIMIT.min(subgeotags.len())] {
         writeln!(&mut html, "<tr>").map_err(ErrorInternalServerError)?;
         writeln!(&mut html, "<td>{}</td>", subgeotag.id).map_err(ErrorInternalServerError)?;
@@ -132,9 +132,9 @@ async fn handle_get_geotags(
         .map_err(ErrorInternalServerError)?;
         writeln!(&mut html, "</tr>").map_err(ErrorInternalServerError)?;
     }
-    writeln!(&mut html, "</table>").map_err(ErrorInternalServerError)?;
-    writeln!(&mut html, "</body>").map_err(ErrorInternalServerError)?;
-    writeln!(&mut html, "</html>").map_err(ErrorInternalServerError)?;
+    // writeln!(&mut html, "</table>").map_err(ErrorInternalServerError)?;
+    // writeln!(&mut html, "</body>").map_err(ErrorInternalServerError)?;
+    // writeln!(&mut html, "</html>").map_err(ErrorInternalServerError)?;
 
     Ok(HttpResponse::build(StatusCode::OK)
         .content_type("text/html")
