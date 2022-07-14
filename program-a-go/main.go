@@ -127,6 +127,7 @@ func handleSearchTag(tags []*Tag, geotags []*Geotag) http.HandlerFunc {
 			htmlBuilder.WriteString(fmt.Sprintf("<td>%f</td>\n", geotag.Latitude))
 			htmlBuilder.WriteString(fmt.Sprintf("<td>%f</td>\n", geotag.Longitude))
 			htmlBuilder.WriteString(fmt.Sprintf("<td>%s</td>\n", baseDate.Add(time.Duration(geotag.Elapsed)*time.Second).Format("2006-01-02 15:04:05")))
+			htmlBuilder.WriteString(fmt.Sprintf("<img src=\"http://farm%v.static.flickr.com%s\" />", geotag.FarmNum, geotag.Directory))
 			htmlBuilder.WriteString("</tr>\n")
 		}
 		htmlBuilder.WriteString("</table>\n")
