@@ -1,8 +1,8 @@
 mod tag;
 
-use crate::tag::{load_tag_json, Tag};
+use crate::tag::{load_tag_json, Geotag};
 use actix_web::{
-    error::{ErrorInternalServerError, ErrorNotFound},
+    error::{ErrorInternalServerError},
     get,
     http::StatusCode,
     web::{self, Data},
@@ -11,20 +11,24 @@ use actix_web::{
 use anyhow::Result;
 use chrono::{prelude::*, Duration, Utc};
 use serde::Deserialize;
-use std::{fmt::Write, sync::Arc};
-use tag::find_tag_by_name;
+use std::{collections::HashMap, fmt::Write, sync::Arc};
 
 const PORT: u16 = 8080;
 const HTML_CAPACITY: usize = 100_000;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let tags = Arc::new(load_tag_json("csv/tag.json")?);
+    let tags = load_tag_json("csv/tag.json")?;
+    let mut tags_map = HashMap::with_capacity(tags.len());
+    for tag in tags {
+        tags_map.insert(tag.tag_name, tag.geotags);
+    }
+    let tags_map_arc = Arc::new(tags_map);
 
     println!("Listening on http://localhost:8080...");
     HttpServer::new(move || {
         App::new()
-            .app_data(Data::new(tags.clone()))
+            .app_data(Data::new(tags_map_arc.clone()))
             .service(handle_get_geotags)
     })
     .bind(("0.0.0.0", PORT))?
@@ -41,19 +45,14 @@ struct GetGeotagRequest {
 
 #[get("/program")]
 async fn handle_get_geotags(
-    tags: Data<Arc<Vec<Tag>>>,
+    tags: Data<Arc<HashMap<String, Vec<Geotag>>>>,
     info: web::Query<GetGeotagRequest>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let target_tag = Arc::new(&info.tag);
-
-    let tag = match find_tag_by_name(tags.as_ref(), target_tag.as_ref()) {
-        Some(i) => &tags[i],
-        None => return Err(ErrorNotFound("")),
-    };
+    let geotags = tags.get(&info.tag).unwrap();
 
     let base_date = Utc.ymd(2012, 1, 1);
     let mut html = String::with_capacity(HTML_CAPACITY);
-    for geotag in &tag.geotags {
+    for geotag in geotags {
         write!(
             &mut html,
             "<div>{} {} {} <img src=\"http://farm{}.static.flickr.com{}\" /></div>",
