@@ -113,9 +113,16 @@ func LoadTags(name string) ([]*Tag, error) {
 		tokens := strings.Split(strings.TrimSpace(tagsc.Text()), ",")
 		id, _ := strconv.ParseUint(tokens[0], 10, 64)
 		tag := tokens[1]
+
+		// 空白のタグを除去
 		if tag == "" {
 			continue
 		}
+		// マルチバイト文字が含まれるタグを除去
+		if len(tag) != len([]rune(tag)) {
+			continue
+		}
+
 		tags = append(tags, &Tag{id, tag})
 	}
 
