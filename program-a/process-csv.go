@@ -2,7 +2,7 @@ package main
 
 import (
 	"bufio"
-	"encoding/csv"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -13,8 +13,8 @@ import (
 )
 
 type Tag struct {
-	tag string
-	ids []uint64
+	id   uint64
+	name string
 }
 
 type Geotag struct {
@@ -22,71 +22,120 @@ type Geotag struct {
 	elapsed   uint64
 	latitude  float64
 	longitude float64
-	farmNum   int    // http://farm{farmNum}.flickr...
+	farmNum   int8   // http://farm{farmNum}.flickr...
 	directory string // /8237/8520927781_4f86a7a3b1.jpg
 }
 
+type TagJson struct {
+	TagName string    `json:"tag_name"`
+	Geotags []Geotag2 `json:"geotags"`
+}
+
+type Geotag2 struct {
+	Elapsed   uint64  `json:"elapsed"`
+	Latitude  float64 `json:"latitude"`
+	Longitude float64 `json:"longitude"`
+	FarmNum   int8    `json:"farm_num"`  // http://farm{farmNum}.flickr...
+	Directory string  `json:"directory"` // /8237/8520927781_4f86a7a3b1.jpg
+}
+
 func main() {
-	if err := processTagCsv("csv/tag.csv"); err != nil {
+	tags, err := LoadTags("csv/tag.csv")
+	if err != nil {
 		log.Fatal(err)
 	}
-	if err := processGeotagCsv("csv/geotag.csv"); err != nil {
+	geotags, err := LoadGeotags("csv/geotag.csv")
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Println("load done")
+
+	tagmap := map[string][]Geotag2{}
+	for _, tag := range tags {
+		geotagIndex := sort.Search(len(geotags), func(i2 int) bool {
+			return geotags[i2].id >= tag.id
+		})
+		if _, ok := tagmap[tag.name]; !ok {
+			tagmap[tag.name] = make([]Geotag2, 0)
+		}
+		if geotagIndex == len(geotags) {
+			log.Fatal(tag.id)
+		}
+		tagmap[tag.name] = append(tagmap[tag.name], Geotag2{
+			Elapsed:   geotags[geotagIndex].elapsed,
+			Latitude:  geotags[geotagIndex].latitude,
+			Longitude: geotags[geotagIndex].longitude,
+			FarmNum:   geotags[geotagIndex].farmNum,
+			Directory: geotags[geotagIndex].directory,
+		})
+	}
+	log.Println("search done")
+
+	tagJsonRoot := []TagJson{}
+	for tagName, geotags := range tagmap {
+		sort.Slice(geotags, func(i, j int) bool {
+			return geotags[i].Elapsed < geotags[j].Elapsed
+		})
+		geotags2 := geotags
+		if len(geotags) > 100 {
+			geotags2 = geotags2[:100]
+		}
+		tagJsonRoot = append(tagJsonRoot, TagJson{
+			TagName: tagName,
+			Geotags: geotags2,
+		})
+	}
+	sort.Slice(tagJsonRoot, func(i, j int) bool {
+		return tagJsonRoot[i].TagName < tagJsonRoot[j].TagName
+	})
+	log.Println("sort done")
+
+	jsonFile, err := os.Create("csv/tag.json")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer jsonFile.Close()
+	if err := json.NewEncoder(jsonFile).Encode(tagJsonRoot); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func processTagCsv(name string) error {
+func LoadTags(name string) ([]*Tag, error) {
 	tagFile, err := os.Open(name)
 	if err != nil {
-		return err
+		return nil, err
 	}
+	defer tagFile.Close()
+
 	tagsc := bufio.NewScanner(tagFile)
-	tagmap := map[string][]uint64{}
+	tags := []*Tag{}
 	for tagsc.Scan() {
 		tokens := strings.Split(strings.TrimSpace(tagsc.Text()), ",")
 		id, _ := strconv.ParseUint(tokens[0], 10, 64)
 		tag := tokens[1]
+
+		// 空白のタグを除去
 		if tag == "" {
 			continue
 		}
-		if _, ok := tagmap[tag]; !ok {
-			tagmap[tag] = make([]uint64, 0)
+		// マルチバイト文字が含まれるタグを除去
+		if len(tag) != len([]rune(tag)) {
+			continue
 		}
-		tagmap[tag] = append(tagmap[tag], id)
-	}
-	tagFile.Close()
-	tags := make([]*Tag, 0, len(tagmap))
-	for tag, ids := range tagmap {
-		tags = append(tags, &Tag{tag, ids})
+
+		tags = append(tags, &Tag{id, tag})
 	}
 
-	sort.Slice(tags, func(i, j int) bool {
-		return tags[i].tag < tags[j].tag
-	})
-
-	newTagFile, err := os.Create("csv/new_tag.csv")
-	if err != nil {
-		return err
-	}
-	newTagCsv := csv.NewWriter(newTagFile)
-	for _, tag := range tags {
-		cols := []string{tag.tag}
-		for _, id := range tag.ids {
-			cols = append(cols, strconv.FormatUint(id, 10))
-		}
-		newTagCsv.Write(cols)
-	}
-	newTagCsv.Flush()
-	newTagFile.Close()
-
-	return nil
+	return tags, nil
 }
 
-func processGeotagCsv(name string) error {
+func LoadGeotags(name string) ([]*Geotag, error) {
 	geotagFile, err := os.Open(name)
 	if err != nil {
-		return err
+		return nil, err
 	}
+	defer geotagFile.Close()
+
 	geotags := make([]*Geotag, 0)
 	geotagsc := bufio.NewScanner(geotagFile)
 	for geotagsc.Scan() {
@@ -99,7 +148,7 @@ func processGeotagCsv(name string) error {
 		}
 		latitude, _ := strconv.ParseFloat(tokens[2], 64)
 		longitude, _ := strconv.ParseFloat(tokens[3], 64)
-		var farmNum int
+		var farmNum int8
 		var directory string
 		fmt.Sscanf(tokens[4], "http://farm%d.static.flickr.com%s", &farmNum, &directory)
 		geotags = append(geotags, &Geotag{
@@ -111,30 +160,10 @@ func processGeotagCsv(name string) error {
 			directory: directory,
 		})
 	}
-	geotagFile.Close()
 
 	sort.Slice(geotags, func(i, j int) bool {
 		return geotags[i].id < geotags[j].id
 	})
 
-	newGeotagFile, err := os.Create("csv/new_geotag.csv")
-	if err != nil {
-		return err
-	}
-	newGeotagCsv := csv.NewWriter(newGeotagFile)
-	for _, geotag := range geotags {
-		cols := []string{
-			strconv.FormatUint(geotag.id, 10),
-			strconv.FormatUint(geotag.elapsed, 10),
-			strconv.FormatFloat(geotag.latitude, 'f', -1, 64),
-			strconv.FormatFloat(geotag.longitude, 'f', -1, 64),
-			strconv.FormatUint(uint64(geotag.farmNum), 10),
-			geotag.directory,
-		}
-		newGeotagCsv.Write(cols)
-	}
-	newGeotagCsv.Flush()
-	newGeotagFile.Close()
-
-	return nil
+	return geotags, nil
 }
