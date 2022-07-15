@@ -85,7 +85,9 @@ func main() {
 			Geotags: geotags2,
 		})
 	}
-
+	sort.Slice(tagJsonRoot, func(i, j int) bool {
+		return tagJsonRoot[i].TagName < tagJsonRoot[j].TagName
+	})
 	log.Println("sort done")
 
 	jsonFile, err := os.Create("csv/tag.json")
