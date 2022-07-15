@@ -21,10 +21,6 @@ const HTML_CAPACITY: usize = 100_000;
 async fn main() -> Result<()> {
     let tags = Arc::new(load_tag_json("csv/tag.json")?);
 
-    for tag in tags.iter() {
-        println!("{}", tag.tag_name);
-    }
-
     println!("Listening on http://localhost:8080...");
     HttpServer::new(move || {
         App::new()
