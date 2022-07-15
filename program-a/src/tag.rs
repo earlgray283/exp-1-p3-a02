@@ -1,6 +1,6 @@
 use anyhow::Result;
 use serde::Deserialize;
-use std::{cmp::Ordering, fs::File, io::BufReader};
+use std::{fs::File, io::BufReader};
 
 #[derive(Deserialize)]
 pub struct Tag {
@@ -22,24 +22,4 @@ pub fn load_tag_json(name: &str) -> Result<Vec<Tag>> {
     let r = BufReader::new(f);
     let tags = serde_json::from_reader(r)?;
     Ok(tags)
-}
-
-pub fn find_tag_by_name(tags: &[Tag], name: &str) -> Option<usize> {
-    let (mut low, mut high) = (0, tags.len());
-    while low != high {
-        let mid = (low + high) / 2;
-        match tags[mid].tag_name.as_str().cmp(name) {
-            Ordering::Less => {
-                low = mid + 1;
-            }
-            Ordering::Equal | Ordering::Greater => {
-                high = mid;
-            }
-        }
-    }
-    if tags[low].tag_name == name {
-        Some(low)
-    } else {
-        None
-    }
 }

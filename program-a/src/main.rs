@@ -2,7 +2,6 @@ mod tag;
 
 use crate::tag::{load_tag_json, Geotag};
 use actix_web::{
-    error::{ErrorInternalServerError},
     get,
     http::StatusCode,
     web::{self, Data},
@@ -11,7 +10,7 @@ use actix_web::{
 use anyhow::Result;
 use chrono::{prelude::*, Duration, Utc};
 use serde::Deserialize;
-use std::{collections::HashMap, fmt::Write, sync::Arc};
+use std::{collections::HashMap, sync::Arc};
 
 const PORT: u16 = 8080;
 const HTML_CAPACITY: usize = 100_000;
@@ -50,19 +49,26 @@ async fn handle_get_geotags(
 ) -> Result<HttpResponse, actix_web::Error> {
     let geotags = tags.get(&info.tag).unwrap();
 
+    let mut itoabuf = itoa::Buffer::new();
+    let mut ryubuf = ryu::Buffer::new();
+
     let base_date = Utc.ymd(2012, 1, 1);
     let mut html = String::with_capacity(HTML_CAPACITY);
     for geotag in geotags {
-        write!(
-            &mut html,
-            "<div>{} {} {} <img src=\"http://farm{}.static.flickr.com{}\" /></div>",
-            geotag.latitude,
-            geotag.longitude,
-            base_date + Duration::seconds(geotag.elapsed as i64),
-            geotag.farm_num,
-            geotag.directory
-        )
-        .map_err(ErrorInternalServerError)?;
+        html.push_str("<div>");
+        html.push_str(
+            (base_date + Duration::seconds(geotag.elapsed as i64))
+                .to_string()
+                .as_str(),
+        );
+        html.push_str(ryubuf.format_finite(geotag.latitude));
+        html.push(' ');
+        html.push_str(ryubuf.format_finite(geotag.longitude));
+        html.push_str("<img src=\"http://farm");
+        html.push_str(itoabuf.format(geotag.farm_num));
+        html.push_str(".static.flickr.com");
+        html.push_str(geotag.directory.as_str());
+        html.push_str("\"/></div>");
     }
 
     Ok(HttpResponse::build(StatusCode::OK)
