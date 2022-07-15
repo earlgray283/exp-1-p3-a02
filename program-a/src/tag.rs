@@ -1,32 +1,34 @@
-use crate::csv::FromCsvLine;
 use anyhow::Result;
-use std::cmp::Ordering;
+use serde::Deserialize;
+use std::{cmp::Ordering, fs::File, io::BufReader};
 
+#[derive(Deserialize)]
 pub struct Tag {
-    pub tag: String,
-    pub ids: Vec<u64>,
+    pub tag_name: String,
+    pub geotags: Vec<Geotag>,
 }
 
-impl FromCsvLine for Tag {
-    fn from_str(s: &str) -> Result<Self> {
-        let tokens = s.trim().split(',').collect::<Vec<_>>();
-        let tag = tokens[0];
-        let mut ids = Vec::new();
-        for token in &tokens[1..] {
-            ids.push(token.parse()?);
-        }
-        Ok(Self {
-            tag: tag.to_string(),
-            ids,
-        })
-    }
+#[derive(Deserialize)]
+pub struct Geotag {
+    pub elapsed: u64,
+    pub latitude: f32,
+    pub longitude: f32,
+    pub farm_num: i8,
+    pub directory: String,
+}
+
+pub fn load_tag_json(name: &str) -> Result<Vec<Tag>> {
+    let f = File::open(name)?;
+    let r = BufReader::new(f);
+    let tags = serde_json::from_reader(r)?;
+    Ok(tags)
 }
 
 pub fn find_tag_by_name(tags: &[Tag], name: &str) -> Option<usize> {
     let (mut low, mut high) = (0, tags.len());
     while low != high {
         let mid = (low + high) / 2;
-        match tags[mid].tag.as_str().cmp(name) {
+        match tags[mid].tag_name.as_str().cmp(name) {
             Ordering::Less => {
                 low = mid + 1;
             }
@@ -35,7 +37,7 @@ pub fn find_tag_by_name(tags: &[Tag], name: &str) -> Option<usize> {
             }
         }
     }
-    if tags[low].tag == name {
+    if tags[low].tag_name == name {
         Some(low)
     } else {
         None
