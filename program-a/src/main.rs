@@ -53,25 +53,40 @@ async fn handle_get_geotags(
     let mut ryubuf = ryu::Buffer::new();
 
     let base_date = Utc.ymd(2012, 1, 1);
-    let mut html = String::with_capacity(HTML_CAPACITY);
-    for geotag in geotags {
-        html.push_str("<div>");
-        html.push_str(
-            (base_date + Duration::seconds(geotag.elapsed as i64))
-                .to_string()
-                .as_str(),
-        );
-        html.push_str(ryubuf.format_finite(geotag.latitude));
-        html.push(' ');
-        html.push_str(ryubuf.format_finite(geotag.longitude));
-        html.push_str("<img src=\"http://farm");
-        html.push_str(itoabuf.format(geotag.farm_num));
-        html.push_str(".static.flickr.com");
-        html.push_str(geotag.directory.as_str());
-        html.push_str("\"/></div>");
+    let mut json = String::with_capacity(HTML_CAPACITY);
+
+    json.push_str(r#"{"tag": ""#);
+    json.push_str(&info.tag);
+    json.push_str(r#"","geotags":["#);
+    for geotag in &geotags[..geotags.len() - 1] {
+        json.push_str(r#"{"lat":"#);
+        json.push_str(ryubuf.format(geotag.latitude));
+        json.push_str(r#","lon":"#);
+        json.push_str(ryubuf.format(geotag.longitude));
+        json.push_str(r#","date":""#);
+        json.push_str(&(base_date + Duration::seconds(geotag.elapsed as i64)).to_string());
+        json.push_str(r#"","url":""#);
+        json.push_str("https://farm");
+        json.push_str(itoabuf.format(geotag.farm_num));
+        json.push_str(".static.flickr.com");
+        json.push_str(&geotag.directory);
+        json.push_str(r#""},"#);
     }
+    let geotag = &geotags[geotags.len() - 1];
+    json.push_str(r#"{"lat":"#);
+    json.push_str(ryubuf.format(geotag.latitude));
+    json.push_str(r#","lon":"#);
+    json.push_str(ryubuf.format(geotag.longitude));
+    json.push_str(r#","date":""#);
+    json.push_str(&(base_date + Duration::seconds(geotag.elapsed as i64)).to_string());
+    json.push_str(r#"","url":""#);
+    json.push_str("https://farm");
+    json.push_str(itoabuf.format(geotag.farm_num));
+    json.push_str(".static.flickr.com");
+    json.push_str(&geotag.directory);
+    json.push_str(r#""}]}"#);
 
     Ok(HttpResponse::build(StatusCode::OK)
-        .content_type("text/html")
-        .body(html))
+        .content_type("application/json")
+        .body(json))
 }
