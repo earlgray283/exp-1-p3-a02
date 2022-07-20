@@ -53,7 +53,6 @@ async fn handle_get_geotags(
 ) -> Result<HttpResponse, actix_web::Error> {
     let geotags = tag_map.get(&info.tag).unwrap();
 
-    let mut itoabuf = itoa::Buffer::new();
     let mut ryubuf = ryu::Buffer::new();
 
     let mut json = Buffer::with_capacity(HTML_CAPACITY);
@@ -69,7 +68,10 @@ async fn handle_get_geotags(
         json.push_str(r#","date":""#);
         json.push_str(&(BASE_DATE.add(Duration::seconds(geotag.elapsed as i64))).to_string());
         json.push_str(r#"","url":"https://farm"#);
-        json.push_str(itoabuf.format(geotag.farm_num));
+        unsafe {
+            let ptr = json.as_mut_ptr().add(json.len());
+            itoap::write_to_ptr(ptr, geotag.farm_num);
+        }
         json.push_str(".static.flickr.com");
         json.push_str(&geotag.directory);
         json.push_str(r#""},"#);
@@ -82,7 +84,10 @@ async fn handle_get_geotags(
     json.push_str(r#","date":""#);
     json.push_str(&(BASE_DATE.add(Duration::seconds(geotag.elapsed as i64))).to_string());
     json.push_str(r#"","url":"https://farm"#);
-    json.push_str(itoabuf.format(geotag.farm_num));
+    unsafe {
+        let ptr = json.as_mut_ptr().add(json.len());
+        itoap::write_to_ptr(ptr, geotag.farm_num);
+    }
     json.push_str(".static.flickr.com");
     json.push_str(&geotag.directory);
     json.push_str(r#""}]}"#);
