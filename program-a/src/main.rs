@@ -11,6 +11,7 @@ use anyhow::Result;
 use chrono::{prelude::*, Duration, Utc};
 use fxhash::FxHashMap as HashMap;
 use once_cell::sync::Lazy;
+use sailfish::runtime::Buffer;
 use serde::Deserialize;
 use std::{ops::Add, sync::Arc};
 
@@ -55,7 +56,7 @@ async fn handle_get_geotags(
     let mut itoabuf = itoa::Buffer::new();
     let mut ryubuf = ryu::Buffer::new();
 
-    let mut json = String::with_capacity(HTML_CAPACITY);
+    let mut json = Buffer::with_capacity(HTML_CAPACITY);
 
     json.push_str(r#"{"tag": ""#);
     json.push_str(&info.tag);
@@ -88,5 +89,5 @@ async fn handle_get_geotags(
 
     Ok(HttpResponse::build(StatusCode::OK)
         .content_type("application/json")
-        .body(json))
+        .body(json.into_string()))
 }
