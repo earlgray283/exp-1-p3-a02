@@ -9,16 +9,19 @@ use actix_web::{
 };
 use anyhow::Result;
 use chrono::{prelude::*, Duration, Utc};
+use fxhash::FxHashMap as HashMap;
+use once_cell::sync::Lazy;
 use serde::Deserialize;
-use std::{collections::HashMap, sync::Arc};
+use std::{ops::Add, sync::Arc};
 
 const PORT: u16 = 8080;
 const HTML_CAPACITY: usize = 100_000;
+static BASE_DATE: Lazy<Date<Utc>> = Lazy::new(|| Utc.ymd(2012, 1, 1));
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let tags = load_tag_json("csv/tag.json")?;
-    let mut tags_map = HashMap::with_capacity(tags.len());
+    let mut tags_map = HashMap::default();
     for tag in tags {
         tags_map.insert(tag.tag_name, tag.geotags);
     }
@@ -44,15 +47,14 @@ struct GetGeotagRequest {
 
 #[get("/program")]
 async fn handle_get_geotags(
-    tags: Data<Arc<HashMap<String, Vec<Geotag>>>>,
+    tag_map: Data<Arc<HashMap<String, Vec<Geotag>>>>,
     info: web::Query<GetGeotagRequest>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let geotags = tags.get(&info.tag).unwrap();
+    let geotags = tag_map.get(&info.tag).unwrap();
 
     let mut itoabuf = itoa::Buffer::new();
     let mut ryubuf = ryu::Buffer::new();
 
-    let base_date = Utc.ymd(2012, 1, 1);
     let mut json = String::with_capacity(HTML_CAPACITY);
 
     json.push_str(r#"{"tag": ""#);
@@ -64,9 +66,8 @@ async fn handle_get_geotags(
         json.push_str(r#","lon":"#);
         json.push_str(ryubuf.format(geotag.longitude));
         json.push_str(r#","date":""#);
-        json.push_str(&(base_date + Duration::seconds(geotag.elapsed as i64)).to_string());
-        json.push_str(r#"","url":""#);
-        json.push_str("https://farm");
+        json.push_str(&(BASE_DATE.add(Duration::seconds(geotag.elapsed as i64))).to_string());
+        json.push_str(r#"","url":"https://farm"#);
         json.push_str(itoabuf.format(geotag.farm_num));
         json.push_str(".static.flickr.com");
         json.push_str(&geotag.directory);
@@ -78,9 +79,8 @@ async fn handle_get_geotags(
     json.push_str(r#","lon":"#);
     json.push_str(ryubuf.format(geotag.longitude));
     json.push_str(r#","date":""#);
-    json.push_str(&(base_date + Duration::seconds(geotag.elapsed as i64)).to_string());
-    json.push_str(r#"","url":""#);
-    json.push_str("https://farm");
+    json.push_str(&(BASE_DATE.add(Duration::seconds(geotag.elapsed as i64))).to_string());
+    json.push_str(r#"","url":"https://farm"#);
     json.push_str(itoabuf.format(geotag.farm_num));
     json.push_str(".static.flickr.com");
     json.push_str(&geotag.directory);

@@ -10,7 +10,7 @@ pub struct Tag {
 
 #[derive(Deserialize)]
 pub struct Geotag {
-    pub elapsed: u32,
+    pub elapsed: i32,
     pub latitude: f32,
     pub longitude: f32,
     pub farm_num: i8,
