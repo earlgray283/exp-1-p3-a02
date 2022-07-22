@@ -68,10 +68,7 @@ async fn handle_get_geotags(
         json.push_str(r#","date":""#);
         json.push_str(&(BASE_DATE.add(Duration::seconds(geotag.elapsed as i64))).to_string());
         json.push_str(r#"","url":"https://farm"#);
-        unsafe {
-            let ptr = json.as_mut_ptr().add(json.len());
-            itoap::write_to_ptr(ptr, geotag.farm_num);
-        }
+        json.push((b'0' + geotag.farm_num) as char);
         json.push_str(".static.flickr.com");
         json.push_str(&geotag.directory);
         json.push_str(r#""},"#);
@@ -84,10 +81,7 @@ async fn handle_get_geotags(
     json.push_str(r#","date":""#);
     json.push_str(&(BASE_DATE.add(Duration::seconds(geotag.elapsed as i64))).to_string());
     json.push_str(r#"","url":"https://farm"#);
-    unsafe {
-        let ptr = json.as_mut_ptr().add(json.len());
-        itoap::write_to_ptr(ptr, geotag.farm_num);
-    }
+    json.push((b'0' + geotag.farm_num) as char);
     json.push_str(".static.flickr.com");
     json.push_str(&geotag.directory);
     json.push_str(r#""}]}"#);
