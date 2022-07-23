@@ -8,12 +8,12 @@
 
 ## Benchmark on local
 
-1. Process geotag.csv and tag.csv by using `process-csv.go`. After processing, `csv/new_geotag.csv` and `csv/tag.csv` will be created.
+1. Process geotag.csv and tag.csv by using `process-csv.go`. After processing, `csv/tag.json` will be created.
 
 ```shell
-$ go run process-csv
+$ go run process-csv.go
 $ ls csv/
-geotag.csv  new_geotag.csv  new_tag.csv  tag.csv
+geotag.csv tag.csv tag.json
 ```
 
 2. Build and launch server
@@ -21,6 +21,5 @@ geotag.csv  new_geotag.csv  new_tag.csv  tag.csv
 ```shell
 $ cargo build --release
 $ ./target/release/program-a
-tags: 41309136[B], geotgas: 499069008[B]
-Li&stening on http://localhost:8080...
+Listening on http://localhost:8080...
 ```
