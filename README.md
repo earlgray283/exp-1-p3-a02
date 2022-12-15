@@ -11,7 +11,9 @@
 1. Process geotag.csv and tag.csv by using `process-csv.go`. After processing, `csv/tag.json` will be created.
 
 ```shell
-$ go run process-csv.go
+$ ls csv/
+geotag.csv tag.csv
+$ go run tools/process-csv.go
 $ ls csv/
 geotag.csv tag.csv tag.json
 ```
