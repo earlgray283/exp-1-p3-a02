@@ -74,7 +74,7 @@ func main() {
 	tagJsonRoot := []TagJson{}
 	for tagName, geotags := range tagmap {
 		sort.Slice(geotags, func(i, j int) bool {
-			return geotags[i].Elapsed < geotags[j].Elapsed
+			return geotags[i].Elapsed > geotags[j].Elapsed
 		})
 		geotags2 := geotags
 		if len(geotags) > 100 {
@@ -119,9 +119,9 @@ func LoadTags(name string) ([]*Tag, error) {
 			continue
 		}
 		// マルチバイト文字が含まれるタグを除去
-		if len(tag) != len([]rune(tag)) {
-			continue
-		}
+		// if len(tag) != len([]rune(tag)) {
+		// 	continue
+		// }
 
 		tags = append(tags, &Tag{id, tag})
 	}
@@ -141,7 +141,7 @@ func LoadGeotags(name string) ([]*Geotag, error) {
 	for geotagsc.Scan() {
 		tokens := strings.Split(strings.TrimSpace(geotagsc.Text()), ",")
 		id, _ := strconv.ParseUint(tokens[0], 10, 64)
-		baseDate := time.Date(2012, time.January, 1, 0, 0, 0, 0, time.Local)
+		baseDate := time.Date(2012, time.January, 1, 0, 0, 0, 0, time.UTC)
 		date, err := time.Parse("2006-01-02 15:04:05", strings.Trim(tokens[1], "\""))
 		if err != nil {
 			log.Fatal(err)

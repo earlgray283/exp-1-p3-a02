@@ -8,16 +8,16 @@ use actix_web::{
     App, HttpResponse, HttpServer,
 };
 use anyhow::Result;
-use chrono::{prelude::*, Duration, Utc};
+use chrono::{prelude::*, Duration};
 use fxhash::FxHashMap as HashMap;
 use once_cell::sync::Lazy;
 use sailfish::runtime::Buffer;
 use serde::Deserialize;
 use std::{ops::Add, sync::Arc};
 
-const PORT: u16 = 8080;
+const PORT: u16 = 3001;
 const HTML_CAPACITY: usize = 100_000;
-static BASE_DATE: Lazy<Date<Utc>> = Lazy::new(|| Utc.ymd(2012, 1, 1));
+static BASE_DATE: Lazy<NaiveDateTime> = Lazy::new(|| NaiveDateTime::new(NaiveDate::from_ymd(2012, 1, 1), NaiveTime::from_hms(0, 0, 0)));
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -28,7 +28,7 @@ async fn main() -> Result<()> {
     }
     let tags_map_arc = Arc::new(tags_map);
 
-    println!("Listening on http://localhost:8080...");
+    println!("Listening on http://localhost:{}...", PORT);
     HttpServer::new(move || {
         App::new()
             .app_data(Data::new(tags_map_arc.clone()))
@@ -46,7 +46,7 @@ struct GetGeotagRequest {
     tag: String,
 }
 
-#[get("/program")]
+#[get("/")]
 async fn handle_get_geotags(
     tag_map: Data<Arc<HashMap<String, Vec<Geotag>>>>,
     info: web::Query<GetGeotagRequest>,
@@ -59,14 +59,14 @@ async fn handle_get_geotags(
 
     json.push_str(r#"{"tag": ""#);
     json.push_str(&info.tag);
-    json.push_str(r#"","geotags":["#);
+    json.push_str(r#"","results":["#);
     for geotag in &geotags[..geotags.len() - 1] {
         json.push_str(r#"{"lat":"#);
         json.push_str(ryubuf.format(geotag.latitude));
         json.push_str(r#","lon":"#);
         json.push_str(ryubuf.format(geotag.longitude));
         json.push_str(r#","date":""#);
-        json.push_str(&(BASE_DATE.add(Duration::seconds(geotag.elapsed as i64))).to_string());
+        json.push_str(&(BASE_DATE.add(Duration::seconds(geotag.elapsed as i64)).format("%F %T").to_string()));
         json.push_str(r#"","url":"https://farm"#);
         json.push((b'0' + geotag.farm_num) as char);
         json.push_str(".static.flickr.com");
@@ -79,7 +79,7 @@ async fn handle_get_geotags(
     json.push_str(r#","lon":"#);
     json.push_str(ryubuf.format(geotag.longitude));
     json.push_str(r#","date":""#);
-    json.push_str(&(BASE_DATE.add(Duration::seconds(geotag.elapsed as i64))).to_string());
+    json.push_str(&(BASE_DATE.add(Duration::seconds(geotag.elapsed as i64))).format("%F %T").to_string());
     json.push_str(r#"","url":"https://farm"#);
     json.push((b'0' + geotag.farm_num) as char);
     json.push_str(".static.flickr.com");
