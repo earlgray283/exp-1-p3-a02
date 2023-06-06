@@ -62,12 +62,12 @@ async fn handle_get_geotags(
     json.push_str(r#"","results":["#);
     for geotag in &geotags[..geotags.len() - 1] {
         json.push_str(r#"{"lat":"#);
-        json.push_str(ryubuf.format(geotag.latitude));
+        json.push_str(ryubuf.format_finite(geotag.latitude));
         json.push_str(r#","lon":"#);
-        json.push_str(ryubuf.format(geotag.longitude));
+        json.push_str(ryubuf.format_finite(geotag.longitude));
         json.push_str(r#","date":""#);
         json.push_str(&(BASE_DATE.add(Duration::seconds(geotag.elapsed as i64)).format("%F %T").to_string()));
-        json.push_str(r#"","url":"https://farm"#);
+        json.push_str(r#"","url":"http://farm"#);
         json.push((b'0' + geotag.farm_num) as char);
         json.push_str(".static.flickr.com");
         json.push_str(&geotag.directory);
@@ -75,9 +75,9 @@ async fn handle_get_geotags(
     }
     let geotag = &geotags[geotags.len() - 1];
     json.push_str(r#"{"lat":"#);
-    json.push_str(ryubuf.format(geotag.latitude));
+    json.push_str(ryubuf.format_finite(geotag.latitude));
     json.push_str(r#","lon":"#);
-    json.push_str(ryubuf.format(geotag.longitude));
+    json.push_str(ryubuf.format_finite(geotag.longitude));
     json.push_str(r#","date":""#);
     json.push_str(&(BASE_DATE.add(Duration::seconds(geotag.elapsed as i64))).format("%F %T").to_string());
     json.push_str(r#"","url":"https://farm"#);
