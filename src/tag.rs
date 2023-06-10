@@ -1,6 +1,6 @@
 use anyhow::Result;
 use serde::Deserialize;
-use std::{fs::File, io::BufReader};
+use std::{borrow::Cow, fs::File, io::BufReader};
 
 #[derive(Deserialize)]
 pub struct Tag {
@@ -14,7 +14,7 @@ pub struct Geotag {
     pub latitude: f64,
     pub longitude: f64,
     pub farm_num: u8,
-    pub directory: String,
+    pub directory: Cow<'static, str>,
 }
 
 pub fn load_tag_json(name: &str) -> Result<Vec<Tag>> {
